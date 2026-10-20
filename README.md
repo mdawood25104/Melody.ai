@@ -2,6 +2,20 @@
 
 React + FastAPI + PostgreSQL/SQLite. Gemini writes lyrics and improves prompts; Kie.ai's Suno music API generates songs.
 
+## Project structure
+The backend is organized by responsibility rather than keeping application code in one entry point:
+- `backend/app/main.py` assembles FastAPI, middleware, routers, and startup.
+- `backend/app/config.py`, `database.py`, and `models.py` contain configuration and persistence.
+- `backend/app/schemas.py`, `security.py`, and `errors.py` handle request validation, authentication, and API errors.
+- `backend/app/routers/` contains account, AI-assistance, and music/library endpoints.
+- `backend/app/services/` contains Gemini and music-provider integrations plus the generation worker.
+- `frontend/src/App.tsx` owns route selection and the top-level error boundary.
+- `frontend/src/pages/` contains the landing, account, and studio screens; `components/` contains reusable visual and track components.
+- `frontend/src/api.ts` centralizes API/error handling, while `types.ts` defines shared client-side models.
+- `frontend/src/index.css` contains the application styles.
+
+Generated audio is stored in the project-level `storage/` directory for local development and is mounted at `/data` in Docker. `LOCAL_STORAGE_PATH` can override this location. Keep the database and audio directory together when switching between local and Docker runs; database records do not contain the audio files themselves.
+
 ## Setup A: Docker (recommended)
 ```bash
 # Ensure .env has APP_SECRET_KEY, GEMINI_API_KEY, and KIE_API_KEY
@@ -36,6 +50,7 @@ The selected music provider is saved with each generation. Switching providers a
 - "Kie is not configured": `KIE_API_KEY` is missing.
 - 429 "generation in progress": limited by `MAX_CONCURRENT_GENERATIONS_PER_USER`.
 - Port in use: change ports in `docker-compose.yml`.
+- API errors include a request reference ID; use it to match the response to backend logs (`docker compose logs -f --tail=100 backend`). Failed song generations save a sanitized provider message and show it in Activity.
 
 ## Not included yet
 Alembic migrations (tables auto-create at startup), Tailwind/shadcn, waveform, SSE, rate limiting, automated tests, retry endpoint, S3 storage, separate worker container (the worker runs as a thread in the API process).
